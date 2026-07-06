@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Career Fit Diagnostic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0F1B2D;
+    --panel: #152840;
+    --panel-2: #1C3350;
+    --paper: #F1EFE6;
+    --muted: #8FA0B3;
+    --hairline: rgba(241, 239, 230, 0.12);
+    --amber: #E8A33D;
+    --amber-dim: rgba(232, 163, 61, 0.15);
+    --match: #4FA97C;
+    --match-dim: rgba(79, 169, 124, 0.15);
+    --gap: #D9614B;
+    --gap-dim: rgba(217, 97, 75, 0.15);
+    --font-display: 'Space Grotesk', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ink);
+    color: var(--paper);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    padding: 48px 24px 80px;
+  }
+
+  .wrap { max-width: 760px; margin: 0 auto; }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    color: var(--amber);
+    text-transform: uppercase;
+    margin: 0 0 12px;
+  }
+
+  h1 {
+    font-family: var(--font-display);
+    font-size: 34px;
+    font-weight: 600;
+    margin: 0 0 8px;
+    letter-spacing: -0.01em;
+  }
+
+  .subhead {
+    color: var(--muted);
+    font-size: 15px;
+    margin: 0 0 40px;
+    max-width: 480px;
+    line-height: 1.6;
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--hairline);
+    border-radius: 10px;
+    padding: 28px;
+    margin-bottom: 20px;
+  }
+
+  .panel-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 14px;
+  }
+
+  .dropzone {
+    border: 1.5px dashed var(--hairline);
+    border-radius: 8px;
+    padding: 28px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+    display: block;
+  }
+  .dropzone:hover, .dropzone.active {
+    border-color: var(--amber);
+    background: var(--amber-dim);
+  }
+  .dropzone input { display: none; }
+  .dropzone-text {
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .dropzone-text.filled {
+    color: var(--paper);
+    font-family: var(--font-mono);
+    font-size: 13px;
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 160px;
+    background: var(--panel-2);
+    border: 1px solid var(--hairline);
+    border-radius: 8px;
+    color: var(--paper);
+    font-family: var(--font-body);
+    font-size: 14px;
+    line-height: 1.6;
+    padding: 14px;
+    resize: vertical;
+  }
+  textarea::placeholder { color: var(--muted); }
+  textarea:focus { outline: none; border-color: var(--amber); }
+
+  .run-btn {
+    width: 100%;
+    background: var(--amber);
+    color: #2A1B02;
+    border: none;
+    border-radius: 8px;
+    padding: 16px;
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: opacity 0.15s ease;
+  }
+  .run-btn:hover { opacity: 0.9; }
+  .run-btn:disabled { opacity: 0.5; cursor: wait; }
+
+  .status-line {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--muted);
+    text-align: center;
+    margin-top: 14px;
+    min-height: 18px;
+  }
+  .status-line.error { color: var(--gap); }
+
+  .hidden { display: none !important; }
+
+  .gauge-wrap {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    margin-bottom: 8px;
+  }
+  .gauge-number {
+    font-family: var(--font-display);
+    font-size: 44px;
+    font-weight: 700;
+  }
+  .gauge-sub {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+  .verdict {
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--paper);
+    margin: 0;
+  }
+
+  .finding-section { margin-top: 24px; }
+  .finding-heading {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .finding-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .finding-item {
+    display: flex;
+    gap: 10px;
+    font-size: 14px;
+    line-height: 1.55;
+    padding: 12px 14px;
+    border-radius: 8px;
+    background: var(--panel-2);
+  }
+  .finding-item.strength { border-left: 2px solid var(--match); }
+  .finding-item.gap-item { border-left: 2px solid var(--gap); }
+  .finding-item.suggestion { border-left: 2px solid var(--amber); }
+  .finding-item.tip { border-left: 2px solid var(--muted); }
+
+  .skill-table { margin-top: 24px; }
+  .skill-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    border-radius: 6px;
+    background: var(--panel-2);
+    margin-bottom: 6px;
+    font-size: 13px;
+  }
+  .skill-jd { color: var(--paper); }
+  .skill-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+  .skill-badge {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+  }
+  .skill-badge.matched { background: var(--match-dim); color: var(--match); }
+  .skill-badge.missing { background: var(--gap-dim); color: var(--gap); }
+  .skill-sim { color: var(--muted); min-width: 40px; text-align: right; }
+
+  .section-divider {
+    border: none;
+    border-top: 1px solid var(--hairline);
+    margin: 32px 0;
+  }
+
+  .rewrite-item {
+    padding: 14px;
+    border-radius: 8px;
+    background: var(--panel-2);
+    margin-bottom: 12px;
+  }
+  .rewrite-section-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 0 0 10px;
+  }
+  .rewrite-row {
+    display: flex;
+    gap: 10px;
+    font-size: 13px;
+    line-height: 1.55;
+    margin-bottom: 6px;
+  }
+  .rewrite-tag {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    height: fit-content;
+    white-space: nowrap;
+  }
+  .rewrite-tag.before { background: var(--gap-dim); color: var(--gap); }
+  .rewrite-tag.after { background: var(--match-dim); color: var(--match); }
+  .rewrite-reason {
+    font-size: 12px;
+    color: var(--muted);
+    font-style: italic;
+    margin-top: 6px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="eyebrow">Career advisor // diagnostic</p>
+  <h1>Career fit diagnostic</h1>
+  <p class="subhead">Upload a resume and paste a job description. The system reads both, scores the match, and reports what to fix.</p>
+
+  <div class="panel" id="input-panel">
+    <p class="panel-label">01 — Resume</p>
+    <label class="dropzone" id="dropzone">
+      <input type="file" id="resume-file" accept=".pdf,.txt" />
+      <div class="dropzone-text" id="dropzone-text">Drop a .pdf or .txt file, or click to choose</div>
+    </label>
+
+    <p class="panel-label" style="margin-top: 24px;">02 — Job description</p>
+    <textarea id="jd-text" placeholder="Paste the job description text here..."></textarea>
+
+    <button class="run-btn" id="run-btn">Run diagnostic</button>
+    <p class="status-line" id="status-line"></p>
+  </div>
+
+  <div id="report" class="hidden">
+
+    <div class="panel">
+      <p class="panel-label">Overall fit score</p>
+      <div class="gauge-wrap">
+        <div>
+          <div class="gauge-number" id="score-number">—</div>
+          <div class="gauge-sub" id="score-sub">— / — required skills matched</div>
+        </div>
+      </div>
+      <p class="verdict" id="verdict"></p>
+    </div>
+
+    <div class="panel">
+      <div class="finding-section" style="margin-top: 0;">
+        <p class="finding-heading"><span style="color: var(--match);">&#9679;</span> Strengths</p>
+        <ul class="finding-list" id="strengths-list"></ul>
+      </div>
+
+      <div class="finding-section">
+        <p class="finding-heading"><span style="color: var(--gap);">&#9679;</span> Gaps identified</p>
+        <ul class="finding-list" id="gaps-list"></ul>
+      </div>
+
+      <div class="finding-section">
+        <p class="finding-heading"><span style="color: var(--amber);">&#9679;</span> Suggested actions</p>
+        <ul class="finding-list" id="suggestions-list"></ul>
+      </div>
+
+      <div class="finding-section">
+        <p class="finding-heading"><span style="color: var(--muted);">&#9679;</span> Resume wording tips</p>
+        <ul class="finding-list" id="tips-list"></ul>
+      </div>
+    </div>
+
+    <div class="panel">
+      <p class="panel-label">Must-have skill breakdown</p>
+      <div class="skill-table" id="must-have-table"></div>
+
+      <p class="panel-label" style="margin-top: 20px;">Nice-to-have skill breakdown</p>
+      <div class="skill-table" id="nice-to-have-table"></div>
+    </div>
+
+    <div class="panel">
+      <p class="panel-label">Resume rewrite suggestions</p>
+      <div id="rewritten-summary-wrap" class="hidden">
+        <p class="finding-heading" style="margin-top: 0;">Tailored summary</p>
+        <div class="finding-item tip" id="rewritten-summary" style="margin-bottom: 20px;"></div>
+      </div>
+      <div id="bullet-rewrites-wrap">
+        <p class="finding-heading">Bullet rewrites</p>
+        <ul class="finding-list" id="bullet-rewrites-list"></ul>
+      </div>
+      <div class="finding-section" id="missing-skill-suggestions-wrap">
+        <p class="finding-heading">New bullet ideas for missing skills</p>
+        <ul class="finding-list" id="missing-skill-suggestions-list"></ul>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+  const API_BASE = 'http://localhost:8000';
+
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('resume-file');
+  const dropzoneText = document.getElementById('dropzone-text');
+  const jdText = document.getElementById('jd-text');
+  const runBtn = document.getElementById('run-btn');
+  const statusLine = document.getElementById('status-line');
+  const report = document.getElementById('report');
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files.length > 0) {
+      dropzoneText.textContent = fileInput.files[0].name;
+      dropzoneText.classList.add('filled');
+    }
+  });
+
+  ['dragenter', 'dragover'].forEach(evt => {
+    dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.add('active'); });
+  });
+  ['dragleave', 'drop'].forEach(evt => {
+    dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.remove('active'); });
+  });
+  dropzone.addEventListener('drop', (e) => {
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      fileInput.files = files;
+      dropzoneText.textContent = files[0].name;
+      dropzoneText.classList.add('filled');
+    }
+  });
+
+  function renderFindingList(elementId, items, className) {
+    const el = document.getElementById(elementId);
+    el.innerHTML = '';
+    if (!items || items.length === 0) {
+      const li = document.createElement('li');
+      li.className = 'finding-item ' + className;
+      li.textContent = 'None reported.';
+      el.appendChild(li);
+      return;
+    }
+    items.forEach(text => {
+      const li = document.createElement('li');
+      li.className = 'finding-item ' + className;
+      li.textContent = text;
+      el.appendChild(li);
+    });
+  }
+
+  function renderSkillTable(elementId, matches) {
+    const el = document.getElementById(elementId);
+    el.innerHTML = '';
+    if (!matches || matches.length === 0) {
+      el.innerHTML = '<div class="skill-row"><span class="skill-jd">None listed in job description</span></div>';
+      return;
+    }
+    matches.forEach(m => {
+      const row = document.createElement('div');
+      row.className = 'skill-row';
+      const badgeClass = m.is_matched ? 'matched' : 'missing';
+      const badgeText = m.is_matched ? 'matched' : 'missing';
+      row.innerHTML = `
+        <span class="skill-jd">${m.jd_skill}</span>
+        <span class="skill-meta">
+          <span class="skill-sim">${(m.similarity * 100).toFixed(0)}%</span>
+          <span class="skill-badge ${badgeClass}">${badgeText}</span>
+        </span>
+      `;
+      el.appendChild(row);
+    });
+  }
+
+  runBtn.addEventListener('click', async () => {
+    const file = fileInput.files[0];
+    const jd = jdText.value.trim();
+
+    if (!file) {
+      statusLine.textContent = 'Choose a resume file first.';
+      statusLine.classList.add('error');
+      return;
+    }
+    if (!jd) {
+      statusLine.textContent = 'Paste the job description text first.';
+      statusLine.classList.add('error');
+      return;
+    }
+
+    statusLine.classList.remove('error');
+    statusLine.textContent = 'Running diagnostic... this can take 10-30 seconds.';
+    runBtn.disabled = true;
+    report.classList.add('hidden');
+
+    const formData = new FormData();
+    formData.append('resume_file', file);
+    formData.append('jd_text', jd);
+
+    try {
+      const response = await fetch(`${API_BASE}/analyze`, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errBody = await response.json().catch(() => ({}));
+        throw new Error(errBody.detail || `Request failed with status ${response.status}`);
+      }
+
+      const data = await response.json();
+      renderReport(data);
+      statusLine.textContent = 'Diagnostic complete.';
+    } catch (err) {
+      statusLine.textContent = 'Error: ' + err.message;
+      statusLine.classList.add('error');
+    } finally {
+      runBtn.disabled = false;
+    }
+  });
+
+  function renderBulletRewrites(elementId, rewrites) {
+    const el = document.getElementById(elementId);
+    el.innerHTML = '';
+    if (!rewrites || rewrites.length === 0) {
+      const li = document.createElement('li');
+      li.className = 'finding-item tip';
+      li.textContent = 'No specific rewrites suggested -- existing bullets already align well.';
+      el.appendChild(li);
+      return;
+    }
+    rewrites.forEach(r => {
+      const li = document.createElement('li');
+      li.className = 'rewrite-item';
+      li.innerHTML = `
+        <p class="rewrite-section-label">${r.section}</p>
+        <div class="rewrite-row"><span class="rewrite-tag before">before</span><span>${r.original}</span></div>
+        <div class="rewrite-row"><span class="rewrite-tag after">after</span><span>${r.improved}</span></div>
+        <p class="rewrite-reason">${r.reason}</p>
+      `;
+      el.appendChild(li);
+    });
+  }
+
+  function renderReport(data) {
+    const fit = data.fit_result;
+    const gap = data.gap_analysis;
+    const improvements = data.resume_improvements;
+
+    document.getElementById('score-number').textContent = fit.overall_score.toFixed(1) + '%';
+    document.getElementById('score-sub').textContent =
+      `${fit.matched_skill_count} / ${fit.total_required_skill_count} required skills matched`;
+    document.getElementById('verdict').textContent = gap.overall_verdict;
+
+    renderFindingList('strengths-list', gap.strengths, 'strength');
+    renderFindingList('gaps-list', gap.key_gaps, 'gap-item');
+    renderFindingList('suggestions-list', gap.actionable_suggestions, 'suggestion');
+    renderFindingList('tips-list', gap.resume_wording_tips, 'tip');
+
+    renderSkillTable('must-have-table', fit.must_have_matches);
+    renderSkillTable('nice-to-have-table', fit.nice_to_have_matches);
+
+    const summaryWrap = document.getElementById('rewritten-summary-wrap');
+    if (improvements.rewritten_summary) {
+      document.getElementById('rewritten-summary').textContent = improvements.rewritten_summary;
+      summaryWrap.classList.remove('hidden');
+    } else {
+      summaryWrap.classList.add('hidden');
+    }
+
+    renderBulletRewrites('bullet-rewrites-list', improvements.bullet_rewrites);
+    renderFindingList('missing-skill-suggestions-list', improvements.missing_skill_bullet_suggestions, 'suggestion');
+
+    report.classList.remove('hidden');
+  }
+</script>
+</body>
+</html>
