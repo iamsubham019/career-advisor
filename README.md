@@ -1,27 +1,57 @@
 # Career Advisor AI
 
+**GitHub repo:** [github.com/iamsubham019/carrer-advisor](https://github.com/iamsubham019/carrer-advisor)
+
 An AI-powered tool that compares a resume against a job description and
-produces a grounded fit score plus plain-language advice on what to fix.
+produces a grounded fit score plus plain-language advice on what to fix and
+how to rewrite it.
 
 Built as a 5-agent pipeline (resume parser, JD parser, fit scorer, gap
-analyzer, orchestrator) with a single-file frontend on top.
+analyzer, resume improver) orchestrated with LangGraph, with a single-file
+frontend on top. Fully deployed and live.
 
-## Status: fully built and tested end-to-end ✅
+## Live
+
+- **Frontend:** https://subham-career-advisor-frontend.onrender.com
+- **Backend API docs:** https://subham-career-advisor-backend.onrender.com/docs
+
+Both run on Render's free tier, which spins down after inactivity — the
+first request after idle time can take 30-60 seconds while the instance
+wakes up. This is normal, not a bug.
+
+## Status: fully built, tested, and deployed ✅
 
 | Component | File | Status |
 |---|---|---|
-| Resume Parser Agent | `backend/agents/resume_parser.py` | ✅ tested with real Groq calls |
-| JD Parser Agent | `backend/agents/jd_parser.py` | ✅ tested with real Groq calls |
-| Fit Scorer | `backend/agents/fit_scorer.py` | ✅ tested with real embedding model |
-| Gap Analysis Agent | `backend/agents/gap_analyzer.py` | ✅ tested with real Groq calls |
-| Orchestrator (LangGraph) | `backend/agents/orchestrator.py` | ✅ wires all 4 agents into one call |
-| Frontend | `frontend/index.html` | ✅ single-file, no build step, tested in browser |
+| Resume Parser Agent | `backend/agents/resume_parser.py` | ✅ tested with real Groq calls, live |
+| JD Parser Agent | `backend/agents/jd_parser.py` | ✅ tested with real Groq calls, live |
+| Fit Scorer | `backend/agents/fit_scorer.py` | ✅ tested with real embedding model, live |
+| Gap Analysis Agent | `backend/agents/gap_analyzer.py` | ✅ tested with real Groq calls, live |
+| Resume Improvement Agent | `backend/agents/resume_improver.py` | ✅ tested with real Groq calls, live |
+| Orchestrator (LangGraph) | `backend/agents/orchestrator.py` | ✅ wires all 5 agents, gap+improve run in parallel |
+| Frontend | `frontend/index.html` | ✅ single-file, no build step, deployed as static site |
 
-Endpoints: `/parse-resume`, `/parse-jd`, `/score-fit`, `/analyze-gap` (individual,
-for testing/debugging), and `/analyze` (single call, runs the full pipeline —
-what the frontend actually uses).
+Endpoints: `/parse-resume`, `/parse-jd`, `/score-fit`, `/analyze-gap`,
+`/improve-resume` (individual, for testing/debugging), and `/analyze`
+(single call, runs the full pipeline — what the frontend actually uses).
 
-## How to run it
+## Architecture notes
+
+**Embeddings run on `fastembed` (ONNX Runtime), not `sentence-transformers`
+(PyTorch).** The original PyTorch-based setup worked locally but crashed
+Render's free-tier instance with an out-of-memory error (`torch` alone uses
+300-700MB just loaded, exceeding the 512MB free-tier limit). Switched to
+`fastembed` with `BAAI/bge-small-en-v1.5`, which does the same semantic
+matching job on ONNX Runtime with a much smaller memory footprint. No
+functional downside found in testing — matching quality held up.
+
+**Python version pinned to 3.11.9 via a `PYTHON_VERSION` environment variable
+on Render** (not `runtime.txt`, which Render's build system ignored despite
+being the documented method). Render defaulted to Python 3.14, which doesn't
+yet have prebuilt wheels for `pydantic-core`, causing a Rust-compilation
+build failure. The environment variable approach worked reliably.
+
+## How to run it locally
 
 ```bash
 cd backend
@@ -40,28 +70,24 @@ Start the server:
 uvicorn main:app --reload
 ```
 
-Then open `frontend/index.html` directly in your browser (no build step needed).
-Backend must stay running at `http://localhost:8000` while you use it.
+Then open `frontend/index.html` directly in your browser. Note: the deployed
+`index.html` points `API_BASE` at the live Render backend URL, not
+`localhost:8000` — change that line back if you want to test against a local
+backend instead of the live one.
 
 ## Known limitations
 
 **The Fit Scorer can miss connections between jargon and its plain-language
-meaning.** It uses a general-purpose embedding model (`all-MiniLM-L6-v2`),
-which is good at matching concepts phrased in similar language ("led a team"
-≈ "leadership experience") but can under-match specific technical jargon that
-isn't spelled out in plain language nearby. Example found during testing:
-`GroupShuffleSplit` (a specific scikit-learn function) didn't strongly match
-a JD's "preventing data leakage in train/test splits", even though that's
-exactly what it does, because the resume didn't spell out the plain-language
-meaning next to the jargon term.
-
-**This is a deliberate design tradeoff, not a bug to chase with threshold
-tuning.** Lowering `MATCH_THRESHOLD` to catch this one case would loosen
-matching everywhere, producing more false positives across every future
-resume/JD pair. The better fix lives in resume content: pairing jargon with
-a plain-language explanation (e.g. "used GroupShuffleSplit to prevent
-patient-level data leakage" instead of just "GroupShuffleSplit (zero patient
-leakage)") helps both this tool and real-world ATS systems / human recruiters.
+meaning**, though this improved noticeably after switching to
+`BAAI/bge-small-en-v1.5`. It's still a general-purpose embedding model, good
+at matching concepts phrased in similar language ("led a team" ≈ "leadership
+experience") but capable of under-matching specific technical jargon that
+isn't spelled out in plain language nearby. This is a deliberate design
+tradeoff, not something to chase by tuning `MATCH_THRESHOLD` per-example --
+that would loosen matching globally and produce more false positives across
+every future resume/JD pair. The better fix lives in resume content: pairing
+jargon with a plain-language explanation helps both this tool and real-world
+ATS systems / human recruiters.
 
 **The Resume Parser can silently drop terms that don't cleanly fit "skills"
 vs "tools_and_frameworks."** Fixed once already (evaluation metrics like
@@ -70,12 +96,13 @@ that ambiguous terms should default into "skills" rather than being omitted.
 Worth spot-checking the parsed output against the source resume periodically,
 especially after resume format changes.
 
+**Render free-tier cold starts.** Both services spin down after inactivity.
+The frontend shows a status message warning about this during the wait, but
+there's no way around the delay on the free tier without upgrading.
+
 ## Possible next steps (not built)
 
-- Deploy backend (Render) + frontend (Vercel/static host), similar to the
-  MedScribe AI setup
-- Add a "resume improvement suggestions" branch to the LangGraph pipeline
-  that runs in parallel with fit scoring
-- Swap the embedding model for a domain-tuned one if jargon-matching accuracy
-  becomes a real blocker rather than a documented edge case
 - Add caching so repeated runs on the same resume don't re-call the LLM
+- Add a custom domain instead of the default `onrender.com` URLs
+- Consider a lightweight ping/keep-alive to reduce cold-start frequency
+  (tradeoff: uses free-tier hours faster)
