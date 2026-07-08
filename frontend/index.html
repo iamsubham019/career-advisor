@@ -365,7 +365,7 @@
 </div>
 
 <script>
-  const API_BASE = 'http://localhost:8000';
+  const API_BASE = 'https://subham-career-advisor-backend.onrender.com';
 
   const dropzone = document.getElementById('dropzone');
   const fileInput = document.getElementById('resume-file');
@@ -454,7 +454,7 @@
     }
 
     statusLine.classList.remove('error');
-    statusLine.textContent = 'Running diagnostic... this can take 10-30 seconds.';
+    statusLine.textContent = 'Running diagnostic... first request after idle time can take up to a minute (free hosting tier waking up).';
     runBtn.disabled = true;
     report.classList.add('hidden');
 
