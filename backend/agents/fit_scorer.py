@@ -21,15 +21,20 @@ separate candidates. Without this, the scorer only sees what was explicitly
 typed as a "skill", and misses real, demonstrated experience -- which is
 exactly the kind of false-negative gap analysis shouldn't produce.
 
-Model note: first run downloads 'all-MiniLM-L6-v2' (~80MB) from Hugging Face,
-so it needs an internet connection the first time. After that it's cached
-locally and loads fast.
+Model note: uses 'fastembed' (ONNX Runtime backend) instead of the more common
+'sentence-transformers' (PyTorch backend). Same embedding quality for this use
+case, but PyTorch alone commonly uses 300-700MB of RAM just sitting loaded,
+which exceeded Render's free-tier 512MB limit and crashed the server with an
+out-of-memory error. fastembed uses ONNX Runtime, which is dramatically
+lighter, and fits comfortably within free-tier memory limits. First run
+downloads the model (~130MB) automatically; cached after that.
 """
 
 import re
 from typing import List, Tuple
 
-from sentence_transformers import SentenceTransformer
+import numpy as np
+from fastembed import TextEmbedding
 from sklearn.metrics.pairwise import cosine_similarity
 
 from schemas.resume_schema import ParsedResume
@@ -38,15 +43,16 @@ from schemas.fit_schema import FitScoreResult, SkillMatch
 
 MATCH_THRESHOLD = 0.45  # similarity above this counts as "matched"; tuned loosely, adjust after real testing
 MAX_DISPLAY_LEN = 90  # truncate long matched candidate text (e.g. a whole project sentence) for readability
+EMBEDDING_MODEL_NAME = "BAAI/bge-small-en-v1.5"  # small, well-regarded ONNX embedding model (~130MB)
 
 _model = None
 
 
-def _get_model() -> SentenceTransformer:
+def _get_model() -> TextEmbedding:
     """Lazy-load so importing this module doesn't trigger a download until actually needed."""
     global _model
     if _model is None:
-        _model = SentenceTransformer("all-MiniLM-L6-v2")
+        _model = TextEmbedding(model_name=EMBEDDING_MODEL_NAME)
     return _model
 
 
@@ -123,8 +129,10 @@ def _best_match_for_each(
         return [(t, None, 0.0) for t in targets]
 
     model = _get_model()
-    target_embeddings = model.encode(targets)
-    candidate_embeddings = model.encode(candidates)
+    # fastembed's .embed() returns a generator of numpy arrays, one per input string --
+    # convert to a single 2D array for cosine_similarity, same as sentence-transformers did
+    target_embeddings = np.array(list(model.embed(targets)))
+    candidate_embeddings = np.array(list(model.embed(candidates)))
 
     sim_matrix = cosine_similarity(target_embeddings, candidate_embeddings)
 
