@@ -1,4 +1,4 @@
-# Career Advisor AI
+# Career Advisor
 
 **GitHub repo:** [github.com/iamsubham019/carrer-advisor](https://github.com/iamsubham019/carrer-advisor)
 
